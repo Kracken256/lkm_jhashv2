@@ -7,8 +7,8 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Wesley C. Jones");
-MODULE_DESCRIPTION("A simple example Linux module.");
-MODULE_VERSION("0.01");
+MODULE_DESCRIPTION("Kernel module that integrates my JHashV2 algorithm into PRNG. see /dev/jh2_csprng");
+MODULE_VERSION("1.0");
 
 #define DEVICE_NAME "jh2_csprng"
 
