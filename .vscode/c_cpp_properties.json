@@ -1,0 +1,50 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}",
+                "/usr/src/linux-headers-5.14.0-1050-oem/include",
+                "/usr/src/linux-headers-5.14.0-1050-oem/include/uapi",
+                "/usr/src/linux-headers-5.14.0-1050-oem/include/generated",
+                "/usr/src/linux-headers-5.14.0-1050-oem/arch/x86/include",
+                "/usr/src/linux-headers-5.14.0-1050-oem/arch/x86/include/uapi",
+                "/usr/src/linux-headers-5.14.0-1050-oem/arch/x86/include/generated"
+            ],
+            "defines": [
+                "__KERNEL__",
+                "KBUILD_MODNAME=\"hello_module\"",
+                "__GNUC__",
+                "MODULE"
+            ],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "/usr/src/linux-headers-5.14.0-1050-oem/include",
+                    "/usr/src/linux-headers-5.14.0-1050-oem/mm",
+                    "/usr/src/linux-headers-5.14.0-1050-oem/fs",
+                    "/usr/src/linux-headers-5.14.0-1050-oem/kernel"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c89",
+            "cppStandard": "c++17",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        },
+        {
+            "name": "Kernel",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
