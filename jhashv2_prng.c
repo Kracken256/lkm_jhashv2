@@ -10,21 +10,14 @@ MODULE_AUTHOR("Wesley C. Jones");
 MODULE_DESCRIPTION("A simple example Linux module.");
 MODULE_VERSION("0.01");
 
-#define DEVICE_NAME "jh2_csprng"
+#define DEVICE_NAME "jh2_prng"
 
 static int device_open(struct inode *, struct file *);
 static int device_release(struct inode *, struct file *);
 static ssize_t device_read(struct file *, char *, size_t, loff_t *);
 static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
 static int major_num;
-static int device_open_count = 0;
-
-static struct device_attribute dev_attr_mode = {
-    .attr = {
-        .name = "mode",
-        .mode = 0644},
-    .show = NULL,
-    .store = NULL};
+static int device_open_counter = 0;
 
 dev_t devNo;          // Major and Minor device numbers combined into 32 bits
 struct class *pClass; // class_create will set this
@@ -81,7 +74,7 @@ static void inline compute_jhash(uint8_t *buffer)
     memcpy(buffer + 24, &state_4, 8);
 }
 
-// Return 64 bits of entropy for prng
+// Return 64 bits of entropy for prng seed
 static inline uint64_t get_entropy(void)
 {
     return random_get_entropy();
@@ -134,61 +127,56 @@ static ssize_t device_write(struct file *flip, const char *buffer, size_t len, l
 
 static int device_open(struct inode *inode, struct file *file)
 {
-    /* If device is open, return busy */
-    if (device_open_count)
+    if (device_open_counter)
     {
         return -EBUSY;
     }
-    device_open_count++;
+    device_open_counter++;
     try_module_get(THIS_MODULE);
     return 0;
-} /* Called when a process closes our device */
+}
 
 static int device_release(struct inode *inode, struct file *file)
 {
-    /* Decrement the open counter and usage count. Without this, the module would not unload. */
-    device_open_count--;
+    device_open_counter--;
     module_put(THIS_MODULE);
     return 0;
 }
 
-static char *tty_devnode(struct device *dev, umode_t *mode)
+static char *perm_devnode(struct device *dev, umode_t *mode)
 {
     if (!mode)
         return NULL;
-    if (dev->devt == MKDEV(major_num, 0) ||
-        dev->devt == MKDEV(major_num, 2))
-        *mode = 0666;
+    // RW for everyone.
+    *mode = 0666;
     return NULL;
 }
 
 static int __init lkm_example_init(void)
 {
     struct device *pDev;
-    /* Try to register character device */
 
-    // Register character device
+    // Create and register /dev/jh2_prng
     major_num = register_chrdev(0, DEVICE_NAME, &file_ops);
     if (major_num < 0)
     {
-        printk(KERN_ALERT "Could not register device: %d\n", major_num);
+        printk(KERN_ALERT "jhashv2_prng: Could not register device: %d\n", major_num);
         return major_num;
     }
-    devNo = MKDEV(major_num, 0); // Create a dev_t, 32 bit version of numbers
+    devNo = MKDEV(major_num, 0);
 
-    // Create /sys/class/kmem in preparation of creating /dev/kmem
     pClass = class_create(THIS_MODULE, DEVICE_NAME);
     if (IS_ERR(pClass))
     {
-        printk(KERN_WARNING "\ncan't create class");
+        printk(KERN_WARNING "jhashv2_prng:  can't create class\n");
         unregister_chrdev_region(devNo, 1);
         return -ECANCELED;
     }
-    pClass->devnode = tty_devnode;
-    // Create /dev/kmem for this char dev
+    pClass->devnode = perm_devnode;
+
     if (IS_ERR(pDev = device_create(pClass, NULL, devNo, NULL, DEVICE_NAME)))
     {
-        printk(KERN_WARNING "lkm_example.ko can't create device %s\n", DEVICE_NAME);
+        printk(KERN_WARNING "jhashv2_prng: can't create device %s\n", DEVICE_NAME);
         class_destroy(pClass);
         unregister_chrdev_region(devNo, 1);
         return -ECANCELED;
@@ -198,13 +186,15 @@ static int __init lkm_example_init(void)
 
 static void __exit lkm_example_exit(void)
 {
-    /* Remember — we have to clean up after ourselves. Unregister the character device. */
+    // Clean up.
     device_destroy(pClass, devNo);
     class_unregister(pClass);
     class_destroy(pClass);
     unregister_chrdev(major_num, DEVICE_NAME);
-    printk(KERN_INFO "Goodbye, World !\n");
-} /* Register module functions */
+    printk(KERN_INFO "jhashv2_prng unloaded.\n");
+}
+
+// Register module entry and exit
 
 module_init(lkm_example_init);
 module_exit(lkm_example_exit);
