@@ -1,14 +1,11 @@
-#include <linux/init.h>
 #include <linux/module.h>
-#include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/fs.h>
-#include <asm/uaccess.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Wesley C. Jones");
-MODULE_DESCRIPTION("Kernel module that integrates my JHashV2 algorithm into PRNG. see /dev/jh2_csprng");
-MODULE_VERSION("1.0");
+MODULE_DESCRIPTION("Kernel module that integrates my JHashV2 algorithm into PRNG. Use /dev/jh2_prng");
+MODULE_VERSION("1.1");
 
 #define DEVICE_NAME "jh2_prng"
 
@@ -19,14 +16,14 @@ static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
 static int major_num;
 static int device_open_counter = 0;
 
-dev_t devNo;          // Major and Minor device numbers combined into 32 bits
-struct class *pClass; // class_create will set this
-/* This structure points to all of the device functions */
+dev_t devNo;
+struct class *pClass;
+
 static struct file_operations file_ops = {
     .read = device_read,
     .write = device_write,
     .open = device_open,
-    .release = device_release}; /* When a process reads from our device, this gets called. */
+    .release = device_release};
 
 void inline permute_box1(uint64_t *x1, uint64_t *x2, uint64_t *x3, uint64_t *x4)
 {
@@ -116,14 +113,14 @@ static ssize_t device_read(struct file *flip, char *buffer, size_t len, loff_t *
     bytes_read = remainder;
 
     return bytes_read;
-} /* Called when a process tries to write to our device */
+}
 
 static ssize_t device_write(struct file *flip, const char *buffer, size_t len, loff_t *offset)
 {
     /* This is a read-only device */
     printk(KERN_ALERT "This operation is not supported.\n");
     return -EINVAL;
-} /* Called when a process opens our device */
+}
 
 static int device_open(struct inode *inode, struct file *file)
 {
@@ -152,7 +149,7 @@ static char *perm_devnode(struct device *dev, umode_t *mode)
     return NULL;
 }
 
-static int __init lkm_example_init(void)
+static int __init lkm_init(void)
 {
     struct device *pDev;
 
@@ -184,9 +181,9 @@ static int __init lkm_example_init(void)
     return 0;
 }
 
-static void __exit lkm_example_exit(void)
+static void __exit lkm_exit(void)
 {
-    // Clean up.
+    // Clean up and free.
     device_destroy(pClass, devNo);
     class_unregister(pClass);
     class_destroy(pClass);
@@ -196,5 +193,5 @@ static void __exit lkm_example_exit(void)
 
 // Register module entry and exit
 
-module_init(lkm_example_init);
-module_exit(lkm_example_exit);
+module_init(lkm_init);
+module_exit(lkm_exit);
